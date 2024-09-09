@@ -1,17 +1,41 @@
-use std::{collections::HashSet, hash::Hash};
+use std::{collections::HashSet, fmt::{Debug, Display}, hash::Hash};
 
-use crate::Layout;
-
-pub trait CellValue: Copy + PartialEq + Eq + Hash  {}
+pub trait CellValue: Copy + PartialEq + Eq + Hash {}
 impl<T: Copy + PartialEq + Eq + Hash> CellValue for T {}
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub enum Cell<V: CellValue> {
     Collapsed(V),
     Uncollapsed(HashSet<V>),
 }
 
 impl<V: CellValue> Cell<V> {
+    pub fn is_collapsed(&self) -> bool {
+        if let Cell::Collapsed(_) = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn collapse(&mut self, value: V) -> bool {
+        match self {
+            Cell::Collapsed(old_value) => {
+                if *old_value == value {
+                    true
+                } else {
+                    *self = Cell::Collapsed(value);
+                    false
+                }
+            }
+            Cell::Uncollapsed(values) => {
+                let contained = values.contains(&value);
+                *self = Cell::Collapsed(value);
+                contained
+            }
+        }
+    }
+
     pub fn get_possibilities(&mut self) -> HashSet<V> {
         match self {
             Cell::Collapsed(_) => HashSet::new(),
@@ -19,66 +43,68 @@ impl<V: CellValue> Cell<V> {
         }
     }
 
-    pub fn remove(&mut self, value: &V) {
+    pub fn set_possibilities(&mut self, possibilities: HashSet<V>) {
+        *self = Cell::Uncollapsed(possibilities);
+    }
+
+    pub fn add_possibility(&mut self, possibility: &V) {
         if let Self::Uncollapsed(values) = self {
-            values.remove(value);
+            values.insert(*possibility);
+        }
+    }
+
+    pub fn add_possibilities(&mut self, possibilities: &HashSet<V>) {
+        if let Self::Uncollapsed(values) = self {
+            *values = &*values | possibilities;
+        }
+    }
+
+    pub fn remove_possibility(&mut self, possibility: &V) {
+        if let Self::Uncollapsed(values) = self {
+            values.remove(possibility);
+        }
+    }
+
+    pub fn remove_possibilities(&mut self, possibilities: &HashSet<V>) {
+        if let Self::Uncollapsed(values) = self {
+            *values = &*values - possibilities;
         }
     }
 }
 
-#[derive(Debug)]
-pub struct CellsRef<'a, L: Layout, C: CellValue>{
-    layout: &'a mut L,
-    cells: &'a mut Vec<Cell<C>>,
-}
 
-impl<'a, L: Layout, C: CellValue> CellsRef<'a, L, C> {
-    pub fn new(layout: &'a mut L, cells: &'a mut Vec<Cell<C>>) -> Self{
-        Self { layout, cells }
-    }
-
-    pub fn layout(&mut self) -> &mut L{
-        &mut self.layout
-    }
-
-    pub fn get_cell(&mut self, coord: L::Coordinate) -> Option<&Cell<C>> {
-        let index = self.layout.get_index(coord);
-        self.cells.get(index)
-    }
-
-    pub fn remove_value(&mut self, coord: L::Coordinate, value: &C){
-        let index = self.layout.get_index(coord);
-        if let Some(cell_values) = self.cells.get_mut(index) {
-            cell_values.remove(value);
-        }
-    }
-
-    pub fn remove_values(&mut self, coords: Vec<L::Coordinate>, value: &C){
-        for coord in coords {
-            let index = self.layout.get_index(coord);
-            if let Some(cell_values) = self.cells.get_mut(index) {
-                cell_values.remove(value);
-            }
-        }
-    }
-
-    pub fn remove_set(&mut self, coord: L::Coordinate, values: &HashSet<C>) {
-        let index = self.layout.get_index(coord);
-        if let Some(cell_values) = self.cells.get_mut(index) {
-            for value in values{
-                cell_values.remove(value);
-            }
-        }
-    }
-
-    pub fn remove_sets(&mut self, coords: Vec<L::Coordinate>, values: &HashSet<C>) {
-        for coord in coords {
-            let index = self.layout.get_index(coord);
-            if let Some(cell_values) = self.cells.get_mut(index) {
-                for value in values{
-                    cell_values.remove(value);
+impl<V> Debug for Cell<V> where V: Debug + CellValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Cell::Collapsed(value) => {
+                write!(f, "C{{{:?}}}", value)?
+            },
+            Cell::Uncollapsed(values) => {
+                write!(f, "U{{")?;
+                let total = values.len();
+                for (index, value) in values.iter().enumerate() {
+                    write!(f, "{:?}", value)?;
+                    if index < total - 1 {
+                        write!(f, "|")?;
+                    }
                 }
-            }
+                write!(f, "}}")?;
+            },
+        }
+        Ok(())
+    }
+}
+
+impl<V> Display for Cell<V> where V: Display + CellValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Cell::Collapsed(value) => {
+                write!(f, "{}", value)
+            },
+            Cell::Uncollapsed(values) => {
+                let vals: Vec<_> = values.iter().map(|e|{e.to_string()}).collect();
+                write!(f, "{{{}}}", vals.join("|"))
+            },
         }
     }
 }

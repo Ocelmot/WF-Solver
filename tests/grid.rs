@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::HashMap;
 
 use wave_function_collapse::*;
 
@@ -13,10 +13,10 @@ impl GridTest {
     pub fn new(x: usize, y: usize) -> Self {
         let mut layout = Grid::new(x, y);
 
-        let mut possibilities = HashSet::new();
-        possibilities.insert(LandCoastSea::Coast);
-        possibilities.insert(LandCoastSea::Sea);
-        possibilities.insert(LandCoastSea::Land);
+        let mut possibilities = HashMap::new();
+        possibilities.insert(LandCoastSea::Coast, 5);
+        possibilities.insert(LandCoastSea::Sea, 100);
+        possibilities.insert(LandCoastSea::Land, 100);
         layout.add_possibilities(&possibilities);
 
         Self { layout }
@@ -60,11 +60,11 @@ impl Wavefunction for GridTest {
 
 #[test]
 fn grid_land_coast_sea() {
-    let wavefunction = GridTest::new(10, 15);
-    let layout = wavefunction.get_initial_state().clone();
-    println!("Initial Configuration:\n{}", layout);
+    let wavefunction = GridTest::new(50, 20);
 
     let mut solver = Solver::new(wavefunction);
+    solver.collapse_initial((0,0), LandCoastSea::Land);
+    solver.collapse_initial((25, 10), LandCoastSea::Sea);
     let output = solver.solve();
 
     if let Some(layout) = output {

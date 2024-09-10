@@ -1,18 +1,37 @@
+use std::fmt::{Debug, Display};
+
 use rand::{seq::SliceRandom, thread_rng, Rng};
 
-use crate::{cell::Cell, Layout, Wavefunction};
+use crate::{cell::Cell, weighted_iterator::WeightedIterator, Layout, Wavefunction};
 
-pub struct Solver<W: Wavefunction> {
+pub struct Solver<W: Wavefunction>
+where
+    W::L: Debug + Display,
+{
     wavefunction: W,
+    initial_state: W::L,
 }
 
-impl<W: Wavefunction> Solver<W> {
+impl<W: Wavefunction> Solver<W>
+where
+    W::L: Debug + Display,
+{
     pub fn new(wavefunction: W) -> Self {
-        return Self { wavefunction };
+        let layout = wavefunction.get_initial_state().clone();
+        return Self {
+            wavefunction,
+            initial_state: layout,
+        };
+    }
+
+    pub fn collapse_initial(&mut self, coord: <W::L as Layout<W::V>>::Coordinate, value: W::V) {
+        self.initial_state.collapse(&coord, value);
+        self.wavefunction
+            .collapse(&mut self.initial_state, coord, value);
     }
 
     pub fn solve(&mut self) -> Option<W::L> {
-        let mut layout = self.wavefunction.get_initial_state().clone();
+        let mut layout = self.initial_state.clone();
 
         // Choose a cell at random to collapse
         let cells_len = layout.cell_count();
@@ -23,7 +42,7 @@ impl<W: Wavefunction> Solver<W> {
             return None;
         };
         // Collapse the cell with the wavefunction
-        let result = self.collapse(&mut layout, coord);
+        let result = self.collapse(&mut layout, &coord);
 
         return result;
     }
@@ -31,55 +50,49 @@ impl<W: Wavefunction> Solver<W> {
     fn collapse(
         &mut self,
         layout: &mut W::L,
-        coord: <W::L as Layout<W::V>>::Coordinate,
+        coord: &<W::L as Layout<W::V>>::Coordinate,
     ) -> Option<W::L> {
         // For each possibility in the chosen cell, try solving with that configuration
-        let possabilities = layout.get_cell_mut(&coord).unwrap().get_possibilities();
-        let mut possabilities: Vec<_> = possabilities.into_iter().collect();
-        possabilities.shuffle(&mut thread_rng());
-        for possability in possabilities {
+        let possibilities = layout.get_cell_mut(&coord).unwrap().get_possibilities();
+        // let mut possibilities: Vec<_> = possabilities.into_iter().collect();
+        // possibilities.shuffle(&mut thread_rng());
+        for possibility in WeightedIterator::new(possibilities) {
             // Clone cells to test possability
             let mut new_layout = layout.clone();
 
             // Modify cell
             let new_cell = new_layout.get_cell_mut(&coord).unwrap();
-            *new_cell = Cell::Collapsed(possability.clone());
+            *new_cell = Cell::Collapsed(possibility.clone());
 
             // Propagate this proposed collapse
             // let cells_ref = CellsRef::new(&mut self.layout, &mut new_layout);
             self.wavefunction
-                .collapse(&mut new_layout, coord.clone(), possability.clone());
+                .collapse(&mut new_layout, coord.clone(), possibility.clone());
 
             // Find next index target
-            let mut last_coord = None;
-            let mut last_possibilities = usize::MAX;
+            let mut last_coords = Vec::new();
+            let mut last_entropy = f64::MAX;
             for (coord, cell) in new_layout.candidates() {
-                match cell {
-                    Cell::Collapsed(_) => continue,
-                    Cell::Uncollapsed(possabilities) => {
-                        if possabilities.is_empty() {
-                            // Solving is no longer possable
-                            return None;
-                        }
-                        if possabilities.len() < last_possibilities {
-                            // Found new, lower possabilities
-                            last_coord = Some(coord);
-                            last_possibilities = possabilities.len();
-                        }
-                    }
+                let entropy = cell.entropy();
+                if entropy == last_entropy {
+                    last_coords.push(coord.clone());
+                }
+                if entropy < last_entropy {
+                    last_coords = vec![coord.clone()];
+                    last_entropy = entropy;
                 }
             }
-            // If there is no index, we are done.
-            let new_index = match last_coord {
-                Some(index) => index,
-                None => {
-                    // Solving is complete, return
-                    return Some(new_layout);
-                }
-            };
+            // If there are no more candidates, we are done.
+            if last_coords.is_empty() {
+                return Some(new_layout);
+            }
+            // Choose coord
+            let new_coord = last_coords
+                .choose(&mut thread_rng())
+                .expect("if list was empty it should have returned");
 
             // Recurse
-            let result = self.collapse(&mut new_layout, new_index);
+            let result = self.collapse(&mut new_layout, new_coord);
             if result.is_some() {
                 return result;
             }

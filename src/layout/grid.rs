@@ -1,5 +1,5 @@
 use std::{
-    collections::HashSet,
+    collections::HashMap,
     fmt::{Debug, Display},
 };
 
@@ -17,7 +17,7 @@ pub struct Grid<V: CellValue> {
 
 impl<V: CellValue> Grid<V> {
     pub fn new(x: usize, y: usize) -> Self {
-        let cells = vec![vec![Cell::Uncollapsed(HashSet::new()); x]; y];
+        let cells = vec![vec![Cell::Uncollapsed(HashMap::new()); x]; y];
         Self { x, y, cells }
     }
 

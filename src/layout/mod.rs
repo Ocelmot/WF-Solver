@@ -1,5 +1,5 @@
 mod grid;
-use std::collections::HashSet;
+use std::collections::HashMap;
 
 pub use grid::Grid;
 
@@ -16,7 +16,12 @@ pub trait Layout<V: CellValue>: Clone {
             cell.add_possibility(possibility);
         }
     }
-    fn add_cell_possibilities(&mut self, coord: &Self::Coordinate, possibilities: &HashSet<V>) {
+    fn add_cell_possibility_count(&mut self, coord: &Self::Coordinate, possibility: &V, count: usize) {
+        if let Some(cell) = self.get_cell_mut(coord) {
+            cell.add_possibility_count(possibility, count);
+        }
+    }
+    fn add_cell_possibilities(&mut self, coord: &Self::Coordinate, possibilities: &HashMap<V, usize>) {
         if let Some(cell) = self.get_cell_mut(coord) {
             cell.add_possibilities(possibilities);
         }
@@ -27,7 +32,12 @@ pub trait Layout<V: CellValue>: Clone {
             self.add_cell_possibility(&coord, possibility);
         }
     }
-    fn add_cells_possibilities(&mut self, coords: Vec<Self::Coordinate>, possibilities: &HashSet<V>){
+    fn add_cells_possibility_count(&mut self, coords: Vec<Self::Coordinate>, possibility: &V, count: usize) {
+        for coord in coords {
+            self.add_cell_possibility_count(&coord, possibility, count);
+        }
+    }
+    fn add_cells_possibilities(&mut self, coords: Vec<Self::Coordinate>, possibilities: &HashMap<V, usize>){
         for coord in coords {
             self.add_cell_possibilities(&coord, possibilities);
         }
@@ -38,7 +48,12 @@ pub trait Layout<V: CellValue>: Clone {
             cell.add_possibility(possibility);
         }
     }
-    fn add_possibilities(&mut self, possibilities: &HashSet<V>){
+    fn add_possibility_count(&mut self, possibility: &V, count: usize){
+        for (_, cell) in self.cells() {
+            cell.add_possibility_count(possibility, count);
+        }
+    }
+    fn add_possibilities(&mut self, possibilities: &HashMap<V, usize>){
         for (_, cell) in self.cells() {
             cell.add_possibilities(possibilities);
         }
@@ -49,7 +64,12 @@ pub trait Layout<V: CellValue>: Clone {
             cell.remove_possibility(possibility);
         }
     }
-    fn remove_cell_possibilities(&mut self, coord: &Self::Coordinate, possibilities: &HashSet<V>) {
+    fn remove_cell_possibility_count(&mut self, coord: &Self::Coordinate, possibility: &V, count: usize) {
+        if let Some(cell) = self.get_cell_mut(coord) {
+            cell.remove_possibility_count(possibility, count);
+        }
+    }
+    fn remove_cell_possibilities(&mut self, coord: &Self::Coordinate, possibilities: &HashMap<V, usize>) {
         if let Some(cell) = self.get_cell_mut(coord) {
             cell.remove_possibilities(possibilities);
         }
@@ -60,7 +80,12 @@ pub trait Layout<V: CellValue>: Clone {
             self.remove_cell_possibility(&coord, possibility);
         }
     }
-    fn remove_cells_possibilities(&mut self, coords: Vec<Self::Coordinate>, possibilities: &HashSet<V>){
+    fn remove_cells_possibility_count(&mut self, coords: Vec<Self::Coordinate>, possibility: &V, count: usize) {
+        for coord in coords {
+            self.remove_cell_possibility_count(&coord, possibility, count);
+        }
+    }
+    fn remove_cells_possibilities(&mut self, coords: Vec<Self::Coordinate>, possibilities: &HashMap<V, usize>){
         for coord in coords {
             self.remove_cell_possibilities(&coord, possibilities);
         }
@@ -71,7 +96,12 @@ pub trait Layout<V: CellValue>: Clone {
             cell.remove_possibility(possibility);
         }
     }
-    fn remove_possibilities(&mut self, possibilities: &HashSet<V>){
+    fn remove_possibility_count(&mut self, possibility: &V, count: usize){
+        for (_, cell) in self.cells() {
+            cell.remove_possibility_count(possibility, count);
+        }
+    }
+    fn remove_possibilities(&mut self, possibilities: &HashMap<V, usize>){
         for (_, cell) in self.cells() {
             cell.remove_possibilities(possibilities);
         }

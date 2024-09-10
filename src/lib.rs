@@ -9,3 +9,5 @@ pub use layout::{Grid, Layout};
 
 mod wavefunction;
 pub use wavefunction::Wavefunction;
+
+mod weighted_iterator;

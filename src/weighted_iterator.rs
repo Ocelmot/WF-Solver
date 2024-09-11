@@ -21,6 +21,9 @@ impl<T: Hash + Eq> Iterator for WeightedIterator<T> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
+        if self.total_sum == 0 {
+            return None;
+        }
         let mut chosen_index = None;
         let mut cumulation = 0;
         let selection = rand::thread_rng().gen_range(0..self.total_sum);

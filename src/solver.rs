@@ -1,6 +1,6 @@
 use std::fmt::{Debug, Display};
 
-use rand::{seq::SliceRandom, thread_rng, Rng};
+use rand::{seq::SliceRandom, thread_rng};
 
 use crate::{cell::Cell, weighted_iterator::WeightedIterator, Layout, Wavefunction};
 
@@ -24,6 +24,10 @@ where
         };
     }
 
+    pub fn print_layout(&self) {
+        self.wavefunction.print_layout(&self.initial_state);
+    }
+
     pub fn collapse_initial(&mut self, coord: <W::L as Layout<W::V>>::Coordinate, value: W::V) {
         self.initial_state.collapse(&coord, value);
         self.wavefunction
@@ -34,15 +38,13 @@ where
         let mut layout = self.initial_state.clone();
 
         // Choose a cell at random to collapse
-        let cells_len = layout.cell_count();
-
-        let mut rng = rand::thread_rng();
-        let skip = rng.gen_range(0usize..cells_len);
-        let Some((coord, _cell)) = layout.cells().skip(skip).next() else {
-            return None;
+        let new_coord = match self.next_coord(&mut layout) {
+            Some(value) => value,
+            None => return Some(layout),
         };
+
         // Collapse the cell with the wavefunction
-        let result = self.collapse(&mut layout, &coord);
+        let result = self.collapse(&mut layout, &new_coord);
 
         return result;
     }
@@ -54,8 +56,6 @@ where
     ) -> Option<W::L> {
         // For each possibility in the chosen cell, try solving with that configuration
         let possibilities = layout.get_cell_mut(&coord).unwrap().get_possibilities();
-        // let mut possibilities: Vec<_> = possabilities.into_iter().collect();
-        // possibilities.shuffle(&mut thread_rng());
         for possibility in WeightedIterator::new(possibilities) {
             // Clone cells to test possability
             let mut new_layout = layout.clone();
@@ -65,39 +65,42 @@ where
             *new_cell = Cell::Collapsed(possibility.clone());
 
             // Propagate this proposed collapse
-            // let cells_ref = CellsRef::new(&mut self.layout, &mut new_layout);
             self.wavefunction
                 .collapse(&mut new_layout, coord.clone(), possibility.clone());
 
-            // Find next index target
-            let mut last_coords = Vec::new();
-            let mut last_entropy = f64::MAX;
-            for (coord, cell) in new_layout.candidates() {
-                let entropy = cell.entropy();
-                if entropy == last_entropy {
-                    last_coords.push(coord.clone());
-                }
-                if entropy < last_entropy {
-                    last_coords = vec![coord.clone()];
-                    last_entropy = entropy;
-                }
-            }
-            // If there are no more candidates, we are done.
-            if last_coords.is_empty() {
-                return Some(new_layout);
-            }
-            // Choose coord
-            let new_coord = last_coords
-                .choose(&mut thread_rng())
-                .expect("if list was empty it should have returned");
+            let new_coord = match self.next_coord(&mut new_layout) {
+                Some(value) => value,
+                None => return Some(new_layout),
+            };
 
             // Recurse
-            let result = self.collapse(&mut new_layout, new_coord);
+            let result = self.collapse(&mut new_layout, &new_coord);
             if result.is_some() {
                 return result;
             }
         }
 
         None
+    }
+
+    fn next_coord(
+        &self,
+        layout: &mut <W as Wavefunction>::L,
+    ) -> Option<<<W as Wavefunction>::L as Layout<<W as Wavefunction>::V>>::Coordinate> {
+        let mut last_coords = Vec::new();
+        let mut last_entropy = f64::MAX;
+        for (coord, cell) in layout.candidates() {
+            let entropy = cell.entropy();
+            if entropy == last_entropy {
+                last_coords.push(coord.clone());
+            }
+            if entropy < last_entropy {
+                last_coords = vec![coord.clone()];
+                last_entropy = entropy;
+            }
+        }
+
+        // Choose a possible item, or None if the list is empty
+        last_coords.choose(&mut thread_rng()).cloned()
     }
 }

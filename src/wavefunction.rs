@@ -12,4 +12,8 @@ pub trait Wavefunction {
         coord: <<Self as Wavefunction>::L as layout::Layout<Self::V>>::Coordinate,
         value: Self::V,
     );
+
+    fn print_layout(&self, _layout: &Self::L) {
+        println!("Implement `print_layout(&self)` in the Wavefunction trait to print the layout");
+    }
 }

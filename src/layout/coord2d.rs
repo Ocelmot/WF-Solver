@@ -1,5 +1,6 @@
+use std::fmt::Display;
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct Coord2D {
     x: usize,
     y: usize,
@@ -69,5 +70,11 @@ impl Coord2D {
             x: self.x.wrapping_add(1),
             y: self.y,
         }
+    }
+}
+
+impl Display for Coord2D {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({}, {})", self.x, self.y)
     }
 }

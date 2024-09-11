@@ -5,7 +5,9 @@ use std::{
 
 use crate::{cell::Cell, CellValue};
 
-use super::Layout;
+use super::{Coord2D, Layout};
+
+type GridCoord = Coord2D;
 
 #[derive(Clone)]
 pub struct Grid<V: CellValue> {
@@ -29,40 +31,40 @@ impl<V: CellValue> Grid<V> {
         self.y
     }
 
-    pub fn row(&self, y: usize) -> Vec<(usize, usize)> {
+    pub fn row(&self, y: usize) -> Vec<GridCoord> {
         let mut v = Vec::new();
         for x in 0..self.x {
-            v.push((x, y));
+            v.push(GridCoord::new(x, y));
         }
         v
     }
 
-    pub fn col(&self, x: usize) -> Vec<(usize, usize)> {
+    pub fn col(&self, x: usize) -> Vec<GridCoord> {
         let mut v = Vec::new();
         for y in 0..self.y {
-            v.push((x, y));
+            v.push(GridCoord::new(x, y));
         }
         v
     }
 
-    pub fn neighbors(&self, coord: (usize, usize)) -> Vec<(usize, usize)> {
+    pub fn neighbors(&self, coord: GridCoord) -> Vec<GridCoord> {
         let mut v = Vec::new();
-        v.push((coord.0.saturating_sub(1), coord.1.saturating_sub(1)));
-        v.push((coord.0, coord.1.saturating_sub(1)));
-        v.push((coord.0 + 1, coord.1.saturating_sub(1)));
+        v.push(GridCoord::new(coord.x().saturating_sub(1), coord.y().saturating_sub(1)));
+        v.push(GridCoord::new(coord.x(), coord.y().saturating_sub(1)));
+        v.push(GridCoord::new(coord.x() + 1, coord.y().saturating_sub(1)));
 
-        v.push((coord.0.saturating_sub(1), coord.1));
-        v.push((coord.0 + 1, coord.1));
+        v.push(GridCoord::new(coord.x().saturating_sub(1), coord.y()));
+        v.push(GridCoord::new(coord.x() + 1, coord.y()));
 
-        v.push((coord.0.saturating_sub(1), coord.1 + 1));
-        v.push((coord.0, coord.1 + 1));
-        v.push((coord.0 + 1, coord.1 + 1));
+        v.push(GridCoord::new(coord.x().saturating_sub(1), coord.y() + 1));
+        v.push(GridCoord::new(coord.x(), coord.y() + 1));
+        v.push(GridCoord::new(coord.x() + 1, coord.y() + 1));
         v
     }
 }
 
 impl<V: CellValue> Layout<V> for Grid<V> {
-    type Coordinate = (usize, usize);
+    type Coordinate = GridCoord;
 
     fn cells<'a>(&'a mut self) -> impl 'a + Iterator<Item = (Self::Coordinate, &mut Cell<V>)>
     where
@@ -71,7 +73,7 @@ impl<V: CellValue> Layout<V> for Grid<V> {
         self.cells.iter_mut().enumerate().flat_map(|(y, row)| {
             row.iter_mut()
                 .enumerate()
-                .map(move |(x, cell)| ((x, y), cell))
+                .map(move |(x, cell)| (Coord2D::new(x, y), cell))
         })
     }
 
@@ -80,8 +82,8 @@ impl<V: CellValue> Layout<V> for Grid<V> {
     }
 
     fn get_cell(&self, coord: &Self::Coordinate) -> Option<&Cell<V>> {
-        if let Some(row) = self.cells.get(coord.1) {
-            if let Some(cell) = row.get(coord.0) {
+        if let Some(row) = self.cells.get(coord.y()) {
+            if let Some(cell) = row.get(coord.x()) {
                 return Some(cell);
             }
         }
@@ -89,8 +91,8 @@ impl<V: CellValue> Layout<V> for Grid<V> {
     }
 
     fn get_cell_mut(&mut self, coord: &Self::Coordinate) -> Option<&mut Cell<V>> {
-        if let Some(row) = self.cells.get_mut(coord.1) {
-            if let Some(cell) = row.get_mut(coord.0) {
+        if let Some(row) = self.cells.get_mut(coord.y()) {
+            if let Some(cell) = row.get_mut(coord.x()) {
                 return Some(cell);
             }
         }

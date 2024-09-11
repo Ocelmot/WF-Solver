@@ -1,7 +1,10 @@
-mod grid;
+
 use std::collections::HashMap;
 
+mod grid;
 pub use grid::Grid;
+mod coord2d;
+pub use coord2d::Coord2D;
 
 use crate::{cell::Cell, CellValue};
 

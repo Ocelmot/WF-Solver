@@ -5,7 +5,7 @@ mod cell;
 pub use cell::{Cell, CellValue};
 
 mod layout;
-pub use layout::{Grid, Layout};
+pub use layout::{Grid, Coord2D, Layout};
 
 mod wavefunction;
 pub use wavefunction::Wavefunction;

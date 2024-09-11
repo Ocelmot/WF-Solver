@@ -63,8 +63,8 @@ fn grid_land_coast_sea() {
     let wavefunction = GridTest::new(50, 20);
 
     let mut solver = Solver::new(wavefunction);
-    solver.collapse_initial((0,0), LandCoastSea::Land);
-    solver.collapse_initial((25, 10), LandCoastSea::Sea);
+    solver.collapse_initial(Coord2D::new(0,0), LandCoastSea::Land);
+    solver.collapse_initial(Coord2D::new(25, 10), LandCoastSea::Sea);
     let output = solver.solve();
 
     if let Some(layout) = output {

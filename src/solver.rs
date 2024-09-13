@@ -1,21 +1,15 @@
-use std::fmt::{Debug, Display};
-
 use rand::{seq::SliceRandom, thread_rng};
 
 use crate::{cell::Cell, weighted_iterator::WeightedIterator, Layout, Wavefunction};
 
-pub struct Solver<W: Wavefunction>
-where
-    W::L: Debug + Display,
-{
+/// Collapses the [Wavefunction] it is created with, returning the resulting [Layout].
+pub struct Solver<W: Wavefunction> {
     wavefunction: W,
     initial_state: W::L,
 }
 
-impl<W: Wavefunction> Solver<W>
-where
-    W::L: Debug + Display,
-{
+impl<W: Wavefunction> Solver<W> {
+    /// Create a new Solver with the given wavefunction.
     pub fn new(wavefunction: W) -> Self {
         let layout = wavefunction.get_initial_state().clone();
         return Self {
@@ -24,16 +18,32 @@ where
         };
     }
 
+    /// Print the current state of the [Layout]
     pub fn print_layout(&self) {
         self.wavefunction.print_layout(&self.initial_state);
     }
 
+    /// Modify the initial [Layout] by collapsing a cell.
+    ///
+    /// This will internally call the wavefunction's collapse method to ensure
+    /// that the wavefunction's rules and constraints are not violated. This
+    /// method is preferred to manually modifying the layout if the wavefunction
+    /// permits access.
     pub fn collapse_initial(&mut self, coord: <W::L as Layout<W::V>>::Coordinate, value: W::V) {
         self.initial_state.collapse(&coord, value);
         self.wavefunction
             .collapse(&mut self.initial_state, coord, value);
     }
 
+    /// Generate a solution to the wavefunction using its current initial
+    /// conditions.
+    ///
+    /// Returns `Some(Layout)` if the solver was able to find a solution,
+    /// Returns None otherwise.
+    ///
+    /// This does not modify the initial conditions of the Layout. The function
+    /// can be called again and will generate another possibly different result,
+    /// if the wavefunction's constraints do not force a unique solution.
     pub fn solve(&mut self) -> Option<W::L> {
         let mut layout = self.initial_state.clone();
 
@@ -49,6 +59,10 @@ where
         return result;
     }
 
+    /// Internal recursive collapse function.
+    ///
+    /// Takes a layout and a coordinate of the next cell to collapse.
+    /// Returns a Layout if successful or None if no solution could be found.
     fn collapse(
         &mut self,
         layout: &mut W::L,
@@ -83,6 +97,8 @@ where
         None
     }
 
+    /// Chooses the next coordinate to collapse by iterating through all
+    /// candidates and returning the one with the lowest entropy.
     fn next_coord(
         &self,
         layout: &mut <W as Wavefunction>::L,

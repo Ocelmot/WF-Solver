@@ -7,8 +7,12 @@ use crate::{cell::Cell, CellValue};
 
 use super::{Coord2D, Layout};
 
+// GridCoord is used as a common type by Grid for both its own functions as well
+// as the associated type for its implementation of Layout.
 type GridCoord = Coord2D;
 
+/// A two dimensional grid [Layout] for use by implementors of the trait
+/// Wavefunction.
 #[derive(Clone)]
 pub struct Grid<V: CellValue> {
     x: usize,
@@ -18,19 +22,26 @@ pub struct Grid<V: CellValue> {
 }
 
 impl<V: CellValue> Grid<V> {
+    /// Creates a new Grid with size (x, y)
+    /// 
+    /// Initially filled with uncollapsed, but empty [Cell]s.
     pub fn new(x: usize, y: usize) -> Self {
         let cells = vec![vec![Cell::Uncollapsed(HashMap::new()); x]; y];
         Self { x, y, cells }
     }
 
+    /// The x size of this grid
     pub fn x(&self) -> usize {
         self.x
     }
 
+    /// The y size of this grid
     pub fn y(&self) -> usize {
         self.y
     }
 
+    /// Returns a [`Vec<Coord2D>`] that contains the coordinates for every cell in
+    /// the row at position `y`
     pub fn row(&self, y: usize) -> Vec<GridCoord> {
         let mut v = Vec::new();
         for x in 0..self.x {
@@ -39,6 +50,8 @@ impl<V: CellValue> Grid<V> {
         v
     }
 
+    /// Returns a [`Vec<Coord2D>`] that contains the coordinates for every cell in
+    /// the column at position `x`
     pub fn col(&self, x: usize) -> Vec<GridCoord> {
         let mut v = Vec::new();
         for y in 0..self.y {
@@ -47,16 +60,18 @@ impl<V: CellValue> Grid<V> {
         v
     }
 
+    /// Returns a [`Vec<Coord2D>`] that contains the coordinates for the 8 cells
+    /// that directly neighbor the cell at `coord`.
     pub fn neighbors(&self, coord: GridCoord) -> Vec<GridCoord> {
         let mut v = Vec::new();
-        v.push(GridCoord::new(coord.x().saturating_sub(1), coord.y().saturating_sub(1)));
-        v.push(GridCoord::new(coord.x(), coord.y().saturating_sub(1)));
-        v.push(GridCoord::new(coord.x() + 1, coord.y().saturating_sub(1)));
+        v.push(GridCoord::new(coord.x().wrapping_sub(1), coord.y().wrapping_sub(1)));
+        v.push(GridCoord::new(coord.x(), coord.y().wrapping_sub(1)));
+        v.push(GridCoord::new(coord.x() + 1, coord.y().wrapping_sub(1)));
 
-        v.push(GridCoord::new(coord.x().saturating_sub(1), coord.y()));
+        v.push(GridCoord::new(coord.x().wrapping_sub(1), coord.y()));
         v.push(GridCoord::new(coord.x() + 1, coord.y()));
 
-        v.push(GridCoord::new(coord.x().saturating_sub(1), coord.y() + 1));
+        v.push(GridCoord::new(coord.x().wrapping_sub(1), coord.y() + 1));
         v.push(GridCoord::new(coord.x(), coord.y() + 1));
         v.push(GridCoord::new(coord.x() + 1, coord.y() + 1));
         v

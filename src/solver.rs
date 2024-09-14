@@ -6,6 +6,7 @@ use crate::{cell::Cell, weighted_iterator::WeightedIterator, Layout, Wavefunctio
 pub struct Solver<W: Wavefunction> {
     wavefunction: W,
     initial_state: W::L,
+    backtracks: u32,
 }
 
 impl<W: Wavefunction> Solver<W> {
@@ -15,12 +16,18 @@ impl<W: Wavefunction> Solver<W> {
         return Self {
             wavefunction,
             initial_state: layout,
+            backtracks: 0,
         };
     }
 
     /// Print the current state of the [Layout]
     pub fn print_layout(&self) {
         self.wavefunction.print_layout(&self.initial_state);
+    }
+
+    /// Returns the number of backtracks the solver made during its last solve
+    pub fn get_backtrack_count(&self) -> u32 {
+        self.backtracks
     }
 
     /// Modify the initial [Layout] by collapsing a cell.
@@ -46,7 +53,7 @@ impl<W: Wavefunction> Solver<W> {
     /// if the wavefunction's constraints do not force a unique solution.
     pub fn solve(&mut self) -> Option<W::L> {
         let mut layout = self.initial_state.clone();
-
+        self.backtracks = 0;
         // Choose a cell at random to collapse
         let new_coord = match self.next_coord(&mut layout) {
             Some(value) => value,
@@ -93,7 +100,7 @@ impl<W: Wavefunction> Solver<W> {
                 return result;
             }
         }
-
+        self.backtracks += 1;
         None
     }
 

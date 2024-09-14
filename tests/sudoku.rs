@@ -168,6 +168,8 @@ fn sudoku_easy() {
         println!("No solution");
     }
 
+    println!("Backtracks: {}", solver.get_backtrack_count());
+
     assert!(output.is_some());
     // TODO: Assert that this is exactly equal to the correct output
 }
@@ -225,6 +227,8 @@ fn sudoku_hard() {
         println!("No solution");
     }
 
+    println!("Backtracks: {}", solver.get_backtrack_count());
+
     assert!(output.is_some());
     // TODO: Assert that this is exactly equal to the correct output
 }
@@ -261,6 +265,8 @@ fn sudoku_invalid() {
     } else {
         println!("No solution");
     }
+
+    println!("Backtracks: {}", solver.get_backtrack_count());
 
     assert!(output.is_none());
 }

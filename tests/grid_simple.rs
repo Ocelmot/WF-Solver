@@ -72,4 +72,7 @@ fn grid_land_coast_sea() {
     } else {
         println!("No solution");
     }
+
+    println!("Backtracks: {}", solver.get_backtrack_count());
+
 }

@@ -130,12 +130,15 @@ mod solver;
 pub use solver::Solver;
 
 mod cell;
-pub use cell::{Cell, CellValue};
+pub use cell::{Cell, CellValue, Operation, Function};
+
+mod tile;
+pub use tile::Tile2D;
 
 mod layout;
-pub use layout::{Coord2D, Grid, Layout};
+pub use layout::{grid::{Grid, Coord2D, Direction}, Layout};
 
 mod wavefunction;
-pub use wavefunction::Wavefunction;
+pub use wavefunction::{Wavefunction, Standard2D};
 
 mod weighted_iterator;

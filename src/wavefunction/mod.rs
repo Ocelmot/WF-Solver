@@ -1,3 +1,6 @@
+mod standard;
+pub use standard::Standard2D;
+
 use crate::{layout, CellValue, Layout};
 
 /// Implementors of Wavefunction can be passed to the solver to produce the

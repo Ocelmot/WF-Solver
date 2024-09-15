@@ -7,6 +7,7 @@ pub struct Solver<W: Wavefunction> {
     wavefunction: W,
     initial_state: W::L,
     backtracks: u32,
+    on_tile_placement: fn(&mut W::L) -> (),
 }
 
 impl<W: Wavefunction> Solver<W> {
@@ -17,6 +18,7 @@ impl<W: Wavefunction> Solver<W> {
             wavefunction,
             initial_state: layout,
             backtracks: 0,
+            on_tile_placement: |_|{}
         };
     }
 
@@ -28,6 +30,13 @@ impl<W: Wavefunction> Solver<W> {
     /// Returns the number of backtracks the solver made during its last solve
     pub fn get_backtrack_count(&self) -> u32 {
         self.backtracks
+    }
+
+    /// Sets a function to be called each time the layout has a tile added to
+    /// it. The function must take a single mutable reference to the layout
+    /// type.
+    pub fn set_on_tile_placement(&mut self, func: fn(&mut W::L) -> ()) {
+        self.on_tile_placement = func;
     }
 
     /// Modify the initial [Layout] by collapsing a cell.
@@ -75,6 +84,7 @@ impl<W: Wavefunction> Solver<W> {
         layout: &mut W::L,
         coord: &<W::L as Layout<W::V>>::Coordinate,
     ) -> Option<W::L> {
+        (self.on_tile_placement)(layout);
         // For each possibility in the chosen cell, try solving with that configuration
         let possibilities = layout.get_cell_mut(&coord).unwrap().get_possibilities();
         for possibility in WeightedIterator::new(possibilities) {
